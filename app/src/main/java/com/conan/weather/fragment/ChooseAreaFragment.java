@@ -14,6 +14,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.conan.weather.R;
+import com.conan.weather.activity.WeatherHomeActivity;
 import com.conan.weather.bean.CityListBean;
 import com.conan.weather.db.City;
 import com.conan.weather.db.County;
@@ -88,6 +89,10 @@ public class ChooseAreaFragment extends Fragment implements Callback<List<CityLi
                     case LEVEL_CITY:
                         selectCity = cityList.get(position);
                         queryCounties();
+                        break;
+                    case LEVEL_COUNTY:
+                        selectCounty = countyList.get(position);
+                        WeatherHomeActivity.instance(getActivity(),selectCounty.getWeatherId());
                         break;
                 }
             }

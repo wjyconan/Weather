@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorPrimary">
+
+    <ImageView
+        android:id="@+id/img_bing_pic"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="背景bing每日一图"
+        android:scaleType="centerCrop" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fitsSystemWindows="true"
+        android:overScrollMode="never"
+        android:scrollbars="none"
+        tools:context="com.conan.weather.activity.WeatherHomeActivity">
+
+
+        <LinearLayout
+            android:id="@+id/llayout_main"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <include layout="@layout/activity_title" />
+
+            <include layout="@layout/activity_home_now" />
+
+            <include layout="@layout/activity_home_forecast" />
+
+            <include layout="@layout/activity_home_aqi" />
+
+            <include layout="@layout/activity_home_suggestion" />
+        </LinearLayout>
+    </ScrollView>
+</FrameLayout>

@@ -2,6 +2,7 @@ package com.conan.weather.utils;
 
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import retrofit2.converter.scalars.ScalarsConverterFactory;
 
 /**
  * Author        JY
@@ -17,6 +18,13 @@ public class HttpUtil {
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(MAIN_URL)
                 .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        return retrofit.create(HttpService.class);
+    }
+    public static HttpService httpString() {
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(MAIN_URL)
+                .addConverterFactory(ScalarsConverterFactory.create())
                 .build();
         return retrofit.create(HttpService.class);
     }
