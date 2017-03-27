@@ -16,7 +16,6 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fitsSystemWindows="true"
         android:overScrollMode="never"
         android:scrollbars="none"
         tools:context="com.conan.weather.activity.WeatherHomeActivity">
@@ -25,6 +24,7 @@
         <LinearLayout
             android:id="@+id/llayout_main"
             android:layout_width="match_parent"
+            android:fitsSystemWindows="true"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
