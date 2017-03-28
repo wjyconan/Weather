@@ -13,30 +13,35 @@
         android:contentDescription="背景bing每日一图"
         android:scaleType="centerCrop" />
 
-    <ScrollView
+    <android.support.v4.widget.SwipeRefreshLayout
+        android:id="@+id/refresh_layout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:overScrollMode="never"
-        android:scrollbars="none"
-        tools:context="com.conan.weather.activity.WeatherHomeActivity">
+        android:layout_height="wrap_content">
 
-
-        <LinearLayout
-            android:id="@+id/llayout_main"
+        <ScrollView
             android:layout_width="match_parent"
-            android:fitsSystemWindows="true"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:layout_height="match_parent"
+            android:overScrollMode="never"
+            android:scrollbars="none"
+            tools:context="com.conan.weather.activity.WeatherHomeActivity">
 
-            <include layout="@layout/activity_title" />
+            <LinearLayout
+                android:id="@+id/llayout_main"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fitsSystemWindows="true"
+                android:orientation="vertical">
 
-            <include layout="@layout/activity_home_now" />
+                <include layout="@layout/activity_title" />
 
-            <include layout="@layout/activity_home_forecast" />
+                <include layout="@layout/activity_home_now" />
 
-            <include layout="@layout/activity_home_aqi" />
+                <include layout="@layout/activity_home_forecast" />
 
-            <include layout="@layout/activity_home_suggestion" />
-        </LinearLayout>
-    </ScrollView>
+                <include layout="@layout/activity_home_aqi" />
+
+                <include layout="@layout/activity_home_suggestion" />
+            </LinearLayout>
+        </ScrollView>
+    </android.support.v4.widget.SwipeRefreshLayout>
 </FrameLayout>

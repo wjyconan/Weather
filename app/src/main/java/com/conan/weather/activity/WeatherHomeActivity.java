@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,7 +28,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class WeatherHomeActivity extends AppCompatActivity implements Callback<WeatherBean> {
+public class WeatherHomeActivity extends AppCompatActivity implements Callback<WeatherBean>, SwipeRefreshLayout.OnRefreshListener {
 
     private static String WEATHER_ID = "weatherId";
 
@@ -55,6 +56,8 @@ public class WeatherHomeActivity extends AppCompatActivity implements Callback<W
     LinearLayout llayoutMain;
     @BindView(R.id.img_bing_pic)
     ImageView imgBingPic;
+    @BindView(R.id.refresh_layout)
+    SwipeRefreshLayout refreshLayout;
 
     public static void instance(Context context, String weatherId) {
         Intent intent = new Intent(context, WeatherHomeActivity.class);
@@ -89,6 +92,8 @@ public class WeatherHomeActivity extends AppCompatActivity implements Callback<W
                 Toast.makeText(WeatherHomeActivity.this, t.toString(), Toast.LENGTH_LONG).show();
             }
         });
+        refreshLayout.setOnRefreshListener(this);
+        refreshLayout.setColorSchemeResources(R.color.colorPrimary);
     }
 
     @Override
@@ -108,7 +113,7 @@ public class WeatherHomeActivity extends AppCompatActivity implements Callback<W
                 TextView txtMax = (TextView) view.findViewById(R.id.txt_max);
                 TextView txtMin = (TextView) view.findViewById(R.id.txt_min);
                 txtDate.setText(forecastBean.getDate());
-                txtInfo.setText(forecastBean.getCond().getTxt_d() + "转" + forecastBean.getCond().getTxt_n());
+                txtInfo.setText(forecastBean.getCond().getTxt_d());
                 txtMax.setText(forecastBean.getTmp().getMax() + "℃");
                 txtMin.setText(forecastBean.getTmp().getMin() + "℃");
                 llayout.addView(view);
@@ -124,11 +129,18 @@ public class WeatherHomeActivity extends AppCompatActivity implements Callback<W
             txtCarWash.setText("洗车指数：" + heWeatherBean.getSuggestion().getCw().getTxt());
             txtSport.setText("运动建议：" + heWeatherBean.getSuggestion().getSport().getTxt());
             llayoutMain.setVisibility(View.VISIBLE);
+            refreshLayout.setRefreshing(false);
         }
     }
 
     @Override
     public void onFailure(Call<WeatherBean> call, Throwable t) {
         Toast.makeText(this, t.toString(), Toast.LENGTH_LONG).show();
+        refreshLayout.setRefreshing(false);
+    }
+
+    @Override
+    public void onRefresh() {
+        HttpUtil.http().getWeather(getIntent().getStringExtra(WEATHER_ID)).enqueue(this);
     }
 }

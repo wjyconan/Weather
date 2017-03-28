@@ -1,5 +1,7 @@
 package com.conan.weather.fragment;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -41,7 +43,7 @@ import retrofit2.Response;
  * Version       1.0
  * Updated       JY
  */
-public class ChooseAreaFragment extends Fragment implements Callback<List<CityListBean>> {
+public class ChooseAreaFragment extends Fragment implements Callback<List<CityListBean>>, AdapterView.OnItemClickListener {
 
     private static final int LEVEL_PROVINCE = 0;
     private static final int LEVEL_CITY = 1;
@@ -69,7 +71,7 @@ public class ChooseAreaFragment extends Fragment implements Callback<List<CityLi
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_choose_area, container, false);
         unbinder = ButterKnife.bind(this, view);
-        adapter = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_list_item_1, dataList);
+        adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, dataList);
         lvCity.setAdapter(adapter);
         return view;
     }
@@ -77,26 +79,15 @@ public class ChooseAreaFragment extends Fragment implements Callback<List<CityLi
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        queryProvinces();
-        lvCity.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                switch (currentLevel) {
-                    case LEVEL_PROVINCE:
-                        selectProvince = provinceList.get(position);
-                        queryCities();
-                        break;
-                    case LEVEL_CITY:
-                        selectCity = cityList.get(position);
-                        queryCounties();
-                        break;
-                    case LEVEL_COUNTY:
-                        selectCounty = countyList.get(position);
-                        WeatherHomeActivity.instance(getActivity(),selectCounty.getWeatherId());
-                        break;
-                }
-            }
-        });
+        SharedPreferences preferences = getActivity().getSharedPreferences("data", Context.MODE_PRIVATE);
+        String weatherId = preferences.getString("weatherId", "0");
+        if ("0".equals(weatherId)) {
+            queryProvinces();
+            lvCity.setOnItemClickListener(this);
+        }else {
+            WeatherHomeActivity.instance(getActivity(),weatherId);
+            getActivity().finish();
+        }
     }
 
     private void queryProvinces() {
@@ -161,7 +152,7 @@ public class ChooseAreaFragment extends Fragment implements Callback<List<CityLi
         backClick();
     }
 
-    private void backClick(){
+    private void backClick() {
         if (currentLevel == LEVEL_COUNTY) {
             queryCities();
         } else if (currentLevel == LEVEL_CITY) {
@@ -210,5 +201,26 @@ public class ChooseAreaFragment extends Fragment implements Callback<List<CityLi
     @Override
     public void onFailure(Call<List<CityListBean>> call, Throwable t) {
         Toast.makeText(getActivity(), t.toString(), Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        switch (currentLevel) {
+            case LEVEL_PROVINCE:
+                selectProvince = provinceList.get(position);
+                queryCities();
+                break;
+            case LEVEL_CITY:
+                selectCity = cityList.get(position);
+                queryCounties();
+                break;
+            case LEVEL_COUNTY:
+                selectCounty = countyList.get(position);
+                SharedPreferences.Editor editor = getActivity().getSharedPreferences("data", Context.MODE_PRIVATE).edit();
+                editor.putString("weatherId", selectCounty.getWeatherId());
+                editor.apply();
+                WeatherHomeActivity.instance(getActivity(), selectCounty.getWeatherId());
+                break;
+        }
     }
 }
