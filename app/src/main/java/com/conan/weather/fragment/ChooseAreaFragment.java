@@ -15,6 +15,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.conan.weather.MainActivity;
 import com.conan.weather.R;
 import com.conan.weather.activity.WeatherHomeActivity;
 import com.conan.weather.bean.CityListBean;
@@ -79,15 +80,8 @@ public class ChooseAreaFragment extends Fragment implements Callback<List<CityLi
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        SharedPreferences preferences = getActivity().getSharedPreferences("data", Context.MODE_PRIVATE);
-        String weatherId = preferences.getString("weatherId", "0");
-        if ("0".equals(weatherId)) {
-            queryProvinces();
-            lvCity.setOnItemClickListener(this);
-        }else {
-            WeatherHomeActivity.instance(getActivity(),weatherId);
-            getActivity().finish();
-        }
+        queryProvinces();
+        lvCity.setOnItemClickListener(this);
     }
 
     private void queryProvinces() {
@@ -219,7 +213,16 @@ public class ChooseAreaFragment extends Fragment implements Callback<List<CityLi
                 SharedPreferences.Editor editor = getActivity().getSharedPreferences("data", Context.MODE_PRIVATE).edit();
                 editor.putString("weatherId", selectCounty.getWeatherId());
                 editor.apply();
-                WeatherHomeActivity.instance(getActivity(), selectCounty.getWeatherId());
+                if (getActivity() instanceof MainActivity) {
+                    WeatherHomeActivity.instance(getActivity(), selectCounty.getWeatherId());
+                } else if (getActivity() instanceof WeatherHomeActivity){
+                    WeatherHomeActivity activity = (WeatherHomeActivity) getActivity();
+                    activity.drawerLayout.closeDrawers();
+                    activity.refreshLayout.setRefreshing(true);
+                    activity.requestWeather(selectCounty.getWeatherId());
+                }
+                break;
+            default:
                 break;
         }
     }

@@ -13,35 +13,51 @@
         android:contentDescription="背景bing每日一图"
         android:scaleType="centerCrop" />
 
-    <android.support.v4.widget.SwipeRefreshLayout
-        android:id="@+id/refresh_layout"
+    <android.support.v4.widget.DrawerLayout
+        android:id="@+id/drawer_layout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="match_parent">
 
-        <ScrollView
+        <android.support.v4.widget.SwipeRefreshLayout
+            android:id="@+id/refresh_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:overScrollMode="never"
+                android:scrollbars="none"
+                tools:context="com.conan.weather.activity.WeatherHomeActivity">
+
+                <LinearLayout
+                    android:id="@+id/llayout_main"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fitsSystemWindows="true"
+                    android:orientation="vertical">
+
+                    <include layout="@layout/activity_title" />
+
+                    <include layout="@layout/activity_home_now" />
+
+                    <include layout="@layout/activity_home_forecast" />
+
+                    <include layout="@layout/activity_home_aqi" />
+
+                    <include layout="@layout/activity_home_suggestion" />
+                </LinearLayout>
+            </ScrollView>
+
+        </android.support.v4.widget.SwipeRefreshLayout>
+
+        <fragment
+            android:id="@+id/fragment_choose_area"
+            android:name="com.conan.weather.fragment.ChooseAreaFragment"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:overScrollMode="never"
-            android:scrollbars="none"
-            tools:context="com.conan.weather.activity.WeatherHomeActivity">
+            android:layout_gravity="start"
+            tools:layout="@layout/fragment_choose_area" />
 
-            <LinearLayout
-                android:id="@+id/llayout_main"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:fitsSystemWindows="true"
-                android:orientation="vertical">
-
-                <include layout="@layout/activity_title" />
-
-                <include layout="@layout/activity_home_now" />
-
-                <include layout="@layout/activity_home_forecast" />
-
-                <include layout="@layout/activity_home_aqi" />
-
-                <include layout="@layout/activity_home_suggestion" />
-            </LinearLayout>
-        </ScrollView>
-    </android.support.v4.widget.SwipeRefreshLayout>
+    </android.support.v4.widget.DrawerLayout>
 </FrameLayout>

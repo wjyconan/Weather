@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
@@ -57,7 +58,11 @@ public class WeatherHomeActivity extends AppCompatActivity implements Callback<W
     @BindView(R.id.img_bing_pic)
     ImageView imgBingPic;
     @BindView(R.id.refresh_layout)
-    SwipeRefreshLayout refreshLayout;
+    public SwipeRefreshLayout refreshLayout;
+    @BindView(R.id.drawer_layout)
+    public DrawerLayout drawerLayout;
+
+    private String weatherId;
 
     public static void instance(Context context, String weatherId) {
         Intent intent = new Intent(context, WeatherHomeActivity.class);
@@ -80,7 +85,7 @@ public class WeatherHomeActivity extends AppCompatActivity implements Callback<W
 
     private void initView() {
         llayoutMain.setVisibility(View.GONE);
-        HttpUtil.http().getWeather(getIntent().getStringExtra(WEATHER_ID)).enqueue(this);
+        requestWeather(getIntent().getStringExtra(WEATHER_ID));
         HttpUtil.httpString().getBingPic().enqueue(new Callback<String>() {
             @Override
             public void onResponse(Call<String> call, Response<String> response) {
@@ -94,6 +99,11 @@ public class WeatherHomeActivity extends AppCompatActivity implements Callback<W
         });
         refreshLayout.setOnRefreshListener(this);
         refreshLayout.setColorSchemeResources(R.color.colorPrimary);
+    }
+
+    public void requestWeather(String weatherId){
+        this.weatherId = weatherId;
+        HttpUtil.http().getWeather(weatherId).enqueue(this);
     }
 
     @Override
@@ -141,6 +151,6 @@ public class WeatherHomeActivity extends AppCompatActivity implements Callback<W
 
     @Override
     public void onRefresh() {
-        HttpUtil.http().getWeather(getIntent().getStringExtra(WEATHER_ID)).enqueue(this);
+        requestWeather(weatherId);
     }
 }
