@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.converter.scalars.ScalarsConverterFactory;
 
@@ -20,8 +21,29 @@ import retrofit2.converter.scalars.ScalarsConverterFactory;
 public class HttpUtil {
 
     private static String MAIN_URL = "http://guolin.tech/";
-    public static HttpService http() {
-        OkHttpClient.Builder builder = new OkHttpClient().newBuilder();
+    private static OkHttpClient.Builder builder;
+
+    public static Retrofit http() {
+        okHttpClientBuilder();
+        return new Retrofit.Builder()
+                .client(builder.build())
+                .baseUrl(MAIN_URL)
+                .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+    }
+
+    public static Retrofit httpString() {
+        okHttpClientBuilder();
+        return new Retrofit.Builder()
+                .baseUrl(MAIN_URL)
+                .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+                .addConverterFactory(ScalarsConverterFactory.create())
+                .build();
+    }
+
+    private static void okHttpClientBuilder() {
+        builder = new OkHttpClient().newBuilder();
         builder.readTimeout(10, TimeUnit.SECONDS);
         builder.connectTimeout(9, TimeUnit.SECONDS);
 
@@ -30,18 +52,5 @@ public class HttpUtil {
             interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
             builder.addInterceptor(interceptor);
         }
-        Retrofit retrofit = new Retrofit.Builder()
-                .client(builder.build())
-                .baseUrl(MAIN_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-        return retrofit.create(HttpService.class);
-    }
-    public static HttpService httpString() {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(MAIN_URL)
-                .addConverterFactory(ScalarsConverterFactory.create())
-                .build();
-        return retrofit.create(HttpService.class);
     }
 }

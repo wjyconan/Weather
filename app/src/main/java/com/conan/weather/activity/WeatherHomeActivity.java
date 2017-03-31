@@ -18,6 +18,7 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.conan.weather.R;
 import com.conan.weather.bean.WeatherBean;
+import com.conan.weather.utils.HttpService;
 import com.conan.weather.utils.HttpUtil;
 
 import java.util.List;
@@ -25,11 +26,17 @@ import java.util.Objects;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import io.reactivex.Observable;
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
-public class WeatherHomeActivity extends AppCompatActivity implements Callback<WeatherBean>, SwipeRefreshLayout.OnRefreshListener {
+/**
+ *
+ */
+public class WeatherHomeActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener {
 
     private static String WEATHER_ID = "weatherId";
 
@@ -63,6 +70,8 @@ public class WeatherHomeActivity extends AppCompatActivity implements Callback<W
     public DrawerLayout drawerLayout;
 
     private String weatherId;
+    private HttpService service;
+    private CompositeDisposable disposable = new CompositeDisposable();
 
     public static void instance(Context context, String weatherId) {
         Intent intent = new Intent(context, WeatherHomeActivity.class);
@@ -86,71 +95,105 @@ public class WeatherHomeActivity extends AppCompatActivity implements Callback<W
     private void initView() {
         llayoutMain.setVisibility(View.GONE);
         requestWeather(getIntent().getStringExtra(WEATHER_ID));
-        HttpUtil.httpString().getBingPic().enqueue(new Callback<String>() {
-            @Override
-            public void onResponse(Call<String> call, Response<String> response) {
-                Glide.with(WeatherHomeActivity.this).load(response.body()).into(imgBingPic);
-            }
+        service = HttpUtil.httpString().create(HttpService.class);
+        Observable<String> observable = service.getBingPic();
+        observable.subscribeOn(Schedulers.io())               //在IO线程进行网络请求
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<String>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        disposable.add(d);
+                    }
 
-            @Override
-            public void onFailure(Call<String> call, Throwable t) {
-                Toast.makeText(WeatherHomeActivity.this, t.toString(), Toast.LENGTH_LONG).show();
-            }
-        });
+                    @Override
+                    public void onNext(String value) {
+                        Glide.with(WeatherHomeActivity.this).load(value).into(imgBingPic);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Toast.makeText(WeatherHomeActivity.this, e.toString(), Toast.LENGTH_LONG).show();
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
         refreshLayout.setOnRefreshListener(this);
         refreshLayout.setColorSchemeResources(R.color.colorPrimary);
     }
 
-    public void requestWeather(String weatherId){
+    public void requestWeather(String weatherId) {
         this.weatherId = weatherId;
-        HttpUtil.http().getWeather(weatherId).enqueue(this);
-    }
+        service = HttpUtil.http().create(HttpService.class);
+        Observable<WeatherBean> observable = service.getWeather(weatherId);
+        observable.subscribeOn(Schedulers.io())               //在IO线程进行网络请求
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<WeatherBean>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        disposable.add(d);
+                    }
 
-    @Override
-    public void onResponse(Call<WeatherBean> call, Response<WeatherBean> response) {
-        WeatherBean.HeWeatherBean heWeatherBean = response.body().getHeWeather().get(0);
-        if (Objects.equals("ok", heWeatherBean.getStatus())) {
-            txtTitleCity.setText(heWeatherBean.getBasic().getCity());
-            txtTitleUpdateTime.setText(heWeatherBean.getBasic().getUpdate().getLoc().split(" ")[1]);
-            txtDegree.setText(heWeatherBean.getNow().getTmp() + "℃");
-            txtWeatherInfo.setText(heWeatherBean.getNow().getCond().getTxt());
-            List<WeatherBean.HeWeatherBean.DailyForecastBean> daily_forecast = heWeatherBean.getDaily_forecast();
-            llayout.removeAllViews();
-            for (WeatherBean.HeWeatherBean.DailyForecastBean forecastBean : daily_forecast) {
-                View view = LayoutInflater.from(this).inflate(R.layout.activity_home_forecast_item, llayout, false);
-                TextView txtDate = (TextView) view.findViewById(R.id.txt_date);
-                TextView txtInfo = (TextView) view.findViewById(R.id.txt_info);
-                TextView txtMax = (TextView) view.findViewById(R.id.txt_max);
-                TextView txtMin = (TextView) view.findViewById(R.id.txt_min);
-                txtDate.setText(forecastBean.getDate());
-                txtInfo.setText(forecastBean.getCond().getTxt_d());
-                txtMax.setText(forecastBean.getTmp().getMax() + "℃");
-                txtMin.setText(forecastBean.getTmp().getMin() + "℃");
-                llayout.addView(view);
-            }
-            if (heWeatherBean.getAqi() != null) {
-                txtAqi.setText(heWeatherBean.getAqi().getCity().getAqi());
-                txtPm25.setText(heWeatherBean.getAqi().getCity().getPm25());
-            } else {
-                txtAqi.setText("--");
-                txtPm25.setText("--");
-            }
-            txtComfort.setText("舒适度：" + heWeatherBean.getSuggestion().getComf().getTxt());
-            txtCarWash.setText("洗车指数：" + heWeatherBean.getSuggestion().getCw().getTxt());
-            txtSport.setText("运动建议：" + heWeatherBean.getSuggestion().getSport().getTxt());
-            llayoutMain.setVisibility(View.VISIBLE);
-            refreshLayout.setRefreshing(false);
-        }
-    }
+                    @Override
+                    public void onNext(WeatherBean value) {
+                        WeatherBean.HeWeatherBean heWeatherBean = value.getHeWeather().get(0);
+                        if (Objects.equals("ok", heWeatherBean.getStatus())) {
+                            txtTitleCity.setText(heWeatherBean.getBasic().getCity());
+                            txtTitleUpdateTime.setText(heWeatherBean.getBasic().getUpdate().getLoc().split(" ")[1]);
+                            txtDegree.setText(heWeatherBean.getNow().getTmp() + "℃");
+                            txtWeatherInfo.setText(heWeatherBean.getNow().getCond().getTxt());
+                            List<WeatherBean.HeWeatherBean.DailyForecastBean> daily_forecast = heWeatherBean.getDaily_forecast();
+                            llayout.removeAllViews();
+                            for (WeatherBean.HeWeatherBean.DailyForecastBean forecastBean : daily_forecast) {
+                                View view = LayoutInflater.from(WeatherHomeActivity.this).inflate(R.layout.activity_home_forecast_item, llayout, false);
+                                TextView txtDate = (TextView) view.findViewById(R.id.txt_date);
+                                TextView txtInfo = (TextView) view.findViewById(R.id.txt_info);
+                                TextView txtMax = (TextView) view.findViewById(R.id.txt_max);
+                                TextView txtMin = (TextView) view.findViewById(R.id.txt_min);
+                                txtDate.setText(forecastBean.getDate());
+                                txtInfo.setText(forecastBean.getCond().getTxt_d());
+                                txtMax.setText(forecastBean.getTmp().getMax() + "℃");
+                                txtMin.setText(forecastBean.getTmp().getMin() + "℃");
+                                llayout.addView(view);
+                            }
+                            if (heWeatherBean.getAqi() != null) {
+                                txtAqi.setText(heWeatherBean.getAqi().getCity().getAqi());
+                                txtPm25.setText(heWeatherBean.getAqi().getCity().getPm25());
+                            } else {
+                                txtAqi.setText("--");
+                                txtPm25.setText("--");
+                            }
+                            txtComfort.setText("舒适度：" + heWeatherBean.getSuggestion().getComf().getTxt());
+                            txtCarWash.setText("洗车指数：" + heWeatherBean.getSuggestion().getCw().getTxt());
+                            txtSport.setText("运动建议：" + heWeatherBean.getSuggestion().getSport().getTxt());
+                            llayoutMain.setVisibility(View.VISIBLE);
+                            refreshLayout.setRefreshing(false);
+                        }
+                    }
 
-    @Override
-    public void onFailure(Call<WeatherBean> call, Throwable t) {
-        Toast.makeText(this, t.toString(), Toast.LENGTH_LONG).show();
-        refreshLayout.setRefreshing(false);
+                    @Override
+                    public void onError(Throwable e) {
+                        Toast.makeText(getApplication(), e.toString(), Toast.LENGTH_LONG).show();
+                        refreshLayout.setRefreshing(false);
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
     }
 
     @Override
     public void onRefresh() {
         requestWeather(weatherId);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        disposable.clear();
     }
 }

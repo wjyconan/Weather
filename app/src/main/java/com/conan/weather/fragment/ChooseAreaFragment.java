@@ -22,6 +22,7 @@ import com.conan.weather.bean.CityListBean;
 import com.conan.weather.db.City;
 import com.conan.weather.db.County;
 import com.conan.weather.db.Province;
+import com.conan.weather.utils.HttpService;
 import com.conan.weather.utils.HttpUtil;
 
 import org.litepal.crud.DataSupport;
@@ -33,9 +34,8 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.Unbinder;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import io.reactivex.Observer;
+import io.reactivex.disposables.Disposable;
 
 /**
  * Author        JY
@@ -44,7 +44,7 @@ import retrofit2.Response;
  * Version       1.0
  * Updated       JY
  */
-public class ChooseAreaFragment extends Fragment implements Callback<List<CityListBean>>, AdapterView.OnItemClickListener {
+public class ChooseAreaFragment extends Fragment implements AdapterView.OnItemClickListener {
 
     private static final int LEVEL_PROVINCE = 0;
     private static final int LEVEL_CITY = 1;
@@ -67,6 +67,9 @@ public class ChooseAreaFragment extends Fragment implements Callback<List<CityLi
     ListView lvCity;
     Unbinder unbinder;
 
+    private HttpService service;
+    private Observer<List<CityListBean>> observer;
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -74,6 +77,58 @@ public class ChooseAreaFragment extends Fragment implements Callback<List<CityLi
         unbinder = ButterKnife.bind(this, view);
         adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, dataList);
         lvCity.setAdapter(adapter);
+        service = HttpUtil.httpString().create(HttpService.class);
+        observer = new Observer<List<CityListBean>>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+
+            }
+
+            @Override
+            public void onNext(List<CityListBean> value) {
+                switch (currentLevel) {
+                    default:
+                        for (int i = 0; i < value.size(); i++) {
+                            Province province = new Province();
+                            province.setProvinceName(value.get(i).getName());
+                            province.setProvinceCode(value.get(i).getId());
+                            province.save();
+                        }
+                        queryProvinces();
+                        break;
+                    case LEVEL_PROVINCE:
+                        for (int i = 0; i < value.size(); i++) {
+                            City city = new City();
+                            city.setCityName(value.get(i).getName());
+                            city.setCityCode(value.get(i).getId());
+                            city.setProvinceId(selectProvince.getProvinceCode());
+                            city.save();
+                        }
+                        queryCities();
+                        break;
+                    case LEVEL_CITY:
+                        for (int i = 0; i < value.size(); i++) {
+                            County county = new County();
+                            county.setCountyName(value.get(i).getName());
+                            county.setWeatherId(value.get(i).getWeather_id());
+                            county.setCityId(selectCity.getCityCode());
+                            county.save();
+                        }
+                        queryCounties();
+                        break;
+                }
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                Toast.makeText(getActivity(), e.toString(), Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onComplete() {
+
+            }
+        };
         return view;
     }
 
@@ -97,7 +152,7 @@ public class ChooseAreaFragment extends Fragment implements Callback<List<CityLi
             lvCity.setSelection(0);
             currentLevel = LEVEL_PROVINCE;
         } else {
-            HttpUtil.http().getProvince().enqueue(this);
+            service.getProvince().subscribe(observer);
         }
     }
 
@@ -114,7 +169,7 @@ public class ChooseAreaFragment extends Fragment implements Callback<List<CityLi
             lvCity.setSelection(0);
             currentLevel = LEVEL_CITY;
         } else {
-            HttpUtil.http().getCity(selectProvince.getProvinceCode()).enqueue(this);
+            service.getCity(selectProvince.getProvinceCode()).subscribe(observer);
         }
     }
 
@@ -131,7 +186,7 @@ public class ChooseAreaFragment extends Fragment implements Callback<List<CityLi
             lvCity.setSelection(0);
             currentLevel = LEVEL_COUNTY;
         } else {
-            HttpUtil.http().getCounty(selectProvince.getProvinceCode(), selectCity.getCityCode()).enqueue(this);
+            service.getCounty(selectProvince.getProvinceCode(), selectCity.getCityCode()).subscribe(observer);
         }
     }
 
@@ -157,47 +212,6 @@ public class ChooseAreaFragment extends Fragment implements Callback<List<CityLi
     }
 
     @Override
-    public void onResponse(Call<List<CityListBean>> call, Response<List<CityListBean>> response) {
-        List<CityListBean> list = response.body();
-        switch (currentLevel) {
-            default:
-                for (int i = 0; i < list.size(); i++) {
-                    Province province = new Province();
-                    province.setProvinceName(list.get(i).getName());
-                    province.setProvinceCode(list.get(i).getId());
-                    province.save();
-                }
-                queryProvinces();
-                break;
-            case LEVEL_PROVINCE:
-                for (int i = 0; i < list.size(); i++) {
-                    City city = new City();
-                    city.setCityName(list.get(i).getName());
-                    city.setCityCode(list.get(i).getId());
-                    city.setProvinceId(selectProvince.getProvinceCode());
-                    city.save();
-                }
-                queryCities();
-                break;
-            case LEVEL_CITY:
-                for (int i = 0; i < list.size(); i++) {
-                    County county = new County();
-                    county.setCountyName(list.get(i).getName());
-                    county.setWeatherId(list.get(i).getWeather_id());
-                    county.setCityId(selectCity.getCityCode());
-                    county.save();
-                }
-                queryCounties();
-                break;
-        }
-    }
-
-    @Override
-    public void onFailure(Call<List<CityListBean>> call, Throwable t) {
-        Toast.makeText(getActivity(), t.toString(), Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         switch (currentLevel) {
             case LEVEL_PROVINCE:
@@ -215,7 +229,7 @@ public class ChooseAreaFragment extends Fragment implements Callback<List<CityLi
                 editor.apply();
                 if (getActivity() instanceof MainActivity) {
                     WeatherHomeActivity.instance(getActivity(), selectCounty.getWeatherId());
-                } else if (getActivity() instanceof WeatherHomeActivity){
+                } else if (getActivity() instanceof WeatherHomeActivity) {
                     WeatherHomeActivity activity = (WeatherHomeActivity) getActivity();
                     activity.drawerLayout.closeDrawers();
                     activity.refreshLayout.setRefreshing(true);
