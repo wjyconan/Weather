@@ -32,6 +32,5 @@ public interface HttpService {
     Observable<WeatherBean> getWeather(@Query("cityid") String cityId);
 
     @GET("/api/bing_pic")
-//    Call<String> getBingPic();
     Observable<String> getBingPic();
 }

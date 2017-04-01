@@ -35,7 +35,9 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.Unbinder;
 import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * Author        JY
@@ -58,7 +60,7 @@ public class ChooseAreaFragment extends Fragment implements AdapterView.OnItemCl
     private Province selectProvince;
     private City selectCity;
     private County selectCounty;
-    private int currentLevel;
+    private int currentLevel = -1;
     @BindView(R.id.img_back)
     ImageView imgBack;
     @BindView(R.id.tv_title)
@@ -77,7 +79,7 @@ public class ChooseAreaFragment extends Fragment implements AdapterView.OnItemCl
         unbinder = ButterKnife.bind(this, view);
         adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, dataList);
         lvCity.setAdapter(adapter);
-        service = HttpUtil.httpString().create(HttpService.class);
+        service = HttpUtil.http().create(HttpService.class);
         observer = new Observer<List<CityListBean>>() {
             @Override
             public void onSubscribe(Disposable d) {
@@ -152,7 +154,10 @@ public class ChooseAreaFragment extends Fragment implements AdapterView.OnItemCl
             lvCity.setSelection(0);
             currentLevel = LEVEL_PROVINCE;
         } else {
-            service.getProvince().subscribe(observer);
+            service.getProvince()
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(observer);
         }
     }
 
@@ -169,7 +174,10 @@ public class ChooseAreaFragment extends Fragment implements AdapterView.OnItemCl
             lvCity.setSelection(0);
             currentLevel = LEVEL_CITY;
         } else {
-            service.getCity(selectProvince.getProvinceCode()).subscribe(observer);
+            service.getCity(selectProvince.getProvinceCode())
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(observer);
         }
     }
 
@@ -186,7 +194,10 @@ public class ChooseAreaFragment extends Fragment implements AdapterView.OnItemCl
             lvCity.setSelection(0);
             currentLevel = LEVEL_COUNTY;
         } else {
-            service.getCounty(selectProvince.getProvinceCode(), selectCity.getCityCode()).subscribe(observer);
+            service.getCounty(selectProvince.getProvinceCode(), selectCity.getCityCode())
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(observer);
         }
     }
 
@@ -229,6 +240,7 @@ public class ChooseAreaFragment extends Fragment implements AdapterView.OnItemCl
                 editor.apply();
                 if (getActivity() instanceof MainActivity) {
                     WeatherHomeActivity.instance(getActivity(), selectCounty.getWeatherId());
+                    getActivity().finish();
                 } else if (getActivity() instanceof WeatherHomeActivity) {
                     WeatherHomeActivity activity = (WeatherHomeActivity) getActivity();
                     activity.drawerLayout.closeDrawers();
